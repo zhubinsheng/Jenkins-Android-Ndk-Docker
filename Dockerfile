@@ -1,8 +1,8 @@
 ## Based Image
-FROM jenkins/jenkins:2.266
+FROM jenkins/jenkins:lts-jdk11
 
 ## Define Environment
-LABEL maintainer="windsekirun@gmail.com"
+LABEL maintainer="zhubinsheng"
 
 ENV ANDROID_SDK_ZIP commandlinetools-linux-6609375_latest.zip
 ENV ANDROID_SDK_ZIP_URL https://dl.google.com/android/repository/$ANDROID_SDK_ZIP
@@ -24,8 +24,8 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
           org.label-schema.name="Jenkins-Android-Docker" \
           org.label-schema.description="Docker image for Jenkins with Android " \
           org.label-schema.vcs-ref=$VCS_REF \
-          org.label-schema.vcs-url="https://github.com/WindSekirun/Jenkins-Android-Docker" \
-          org.label-schema.vendor="WindSekirun" \
+          org.label-schema.vcs-url="" \
+          org.label-schema.vendor="zbs" \
           org.label-schema.version=$VERSION \
           org.label-schema.schema-version="1.0"
 
@@ -59,6 +59,9 @@ RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-27"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;26.0.3"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-26"
+RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;21.3.6528147" --channel=3
+RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;17.2.4988734" --channel=3
+RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;17.2.4988734" --channel=3
 
 RUN chown -R jenkins $ANDROID_SDK_ROOT
 
@@ -67,5 +70,5 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ## Install Jenkins plugin	
 USER jenkins
-
-RUN /usr/local/bin/install-plugins.sh git gradle android-emulator ws-cleanup slack embeddable-build-status blueocean github-coverage-reporter jacoco github-pr-coverage-status locale
+# android-emulator
+RUN /usr/local/bin/install-plugins.sh git gradle ws-cleanup slack embeddable-build-status blueocean github-coverage-reporter jacoco github-pr-coverage-status locale
