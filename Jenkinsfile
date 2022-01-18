@@ -1,7 +1,7 @@
 @Library('jenkins-shared-library')_
 pipeline {
     environment {
-        registry = "windsekirun/jenkins-android-docker"
+        registry = "zbs/jenkins-android-docker"
         registryCredential = 'DockerHub'
     }
     agent any

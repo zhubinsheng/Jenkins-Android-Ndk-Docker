@@ -1,20 +1,24 @@
 ## Based Image
-FROM jenkins/jenkins:lts-jdk11
+FROM jenkins/jenkins:lts-jdk8
 
 ## Define Environment
 LABEL maintainer="zhubinsheng"
+
+ENV ANDROID_NDK_11_ZIP_URL https://dl.google.com/android/repository/android-ndk-r11c-linux-x86_64.zip
+# ENV ANDROID_NDK_11_ZIP_URL http://127.0.0.1:8080/android-ndk-r11c-linux-x86_64.zip
+ENV ANDROID_NDK_11_ZIP android-ndk-r11c-linux-x86_64.zip
 
 ENV ANDROID_SDK_ZIP commandlinetools-linux-6609375_latest.zip
 ENV ANDROID_SDK_ZIP_URL https://dl.google.com/android/repository/$ANDROID_SDK_ZIP
 ENV ANDROID_HOME /opt/android-sdk-linux
 ENV ANDROID_SDK_ROOT /opt/android-sdk-linux
 
-ENV GRADLE_ZIP gradle-5.6.4-bin.zip
+ENV GRADLE_ZIP gradle-6.1.1-bin.zip
 ENV GRADLE_ZIP_URL https://services.gradle.org/distributions/$GRADLE_ZIP
 
 ENV PATH $PATH:$ANDROID_SDK_ROOT/tools/bin
 ENV PATH $PATH:$ANDROID_SDK_ROOT/platform-tools
-ENV PATH $PATH:/opt/gradle-5.6.4/bin
+ENV PATH $PATH:/opt/gradle-6.1.1/bin
 
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
@@ -31,9 +35,9 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 USER root
 
-## Install requirements
+# Install requirements
 RUN dpkg --add-architecture i386
-RUN rm -rf /var/lib/apt/list/* && apt-get update && apt-get install ca-certificates curl gnupg2 software-properties-common git unzip file apt-utils lxc apt-transport-https libc6:i386 libncurses5:i386 libstdc++6:i386 zlib1g:i386 -y
+RUN rm -rf /var/lib/apt/list/* && apt-get update && apt-get install libstdc++5 && apt-get install ca-certificates curl gnupg2 software-properties-common git unzip file apt-utils lxc apt-transport-https libc6:i386 libncurses5:i386 libstdc++6:i386 zlib1g:i386 -y && ln -s /lib/x86_64-linux-gnu/libtinfo.so.6 /lib/x86_64-linux-gnu/libtinfo.so.5  && apt install -y libtinfo5
 
 ## Install Docker-ce into Image
 RUN curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg > /tmp/dkey;
@@ -49,19 +53,25 @@ RUN unzip /opt/$GRADLE_ZIP -d /opt/ && rm /opt/$GRADLE_ZIP
 ADD $ANDROID_SDK_ZIP_URL /opt/
 RUN unzip -q /opt/$ANDROID_SDK_ZIP -d $ANDROID_SDK_ROOT && rm /opt/$ANDROID_SDK_ZIP
 
+ADD $ANDROID_NDK_11_ZIP_URL $ANDROID_SDK_ROOT/ndk/
+RUN unzip -q $ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_11_ZIP -d $ANDROID_SDK_ROOT/ndk && mv $ANDROID_SDK_ROOT/ndk/android-ndk-r11c/ $ANDROID_SDK_ROOT/ndk/11.2.2725575/ && rm $ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_11_ZIP
+
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;30.0.2"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-30"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;29.0.2"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-29"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;28.0.3"
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-28"
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;27.0.3"
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-27"
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;26.0.3"
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-26"
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;21.3.6528147" --channel=3
+# RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;27.0.3"
+# RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-27"
+# RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "build-tools;26.0.3"
+# RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-26"
+
+# RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;21.3.6528147" --channel=3
+RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;20.0.5594570" --channel=3
 RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;17.2.4988734" --channel=3
-RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "ndk;17.2.4988734" --channel=3
+
+RUN echo yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "cmake;3.10.2.4988404"
 
 RUN chown -R jenkins $ANDROID_SDK_ROOT
 
@@ -70,5 +80,5 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ## Install Jenkins plugin	
 USER jenkins
-# android-emulator
+
 RUN /usr/local/bin/install-plugins.sh git gradle ws-cleanup slack embeddable-build-status blueocean github-coverage-reporter jacoco github-pr-coverage-status locale
